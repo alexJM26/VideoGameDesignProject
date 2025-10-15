@@ -1,44 +1,100 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
-// movement of kitten
-public class KittenMovement : MonoBehaviour
+public class Movement : MonoBehaviour
 {
-    // variables
-    private float speed = 10; // set sprite speed to 5
-    private Rigidbody2D kitten; // kitten's rigid body
+    // declarations
+    private Rigidbody2D kittenRB;
+    private Vector2 moveInput;
     private Animator animate;
+    SpriteRenderer spriteRenderer; // for flipping sprite
 
+    // movement variables
+    public float moveSpeed = 5f; // is public, so can be changed in Unity
+    public float jumpForce = 10f;
 
-    // runs once, when script is loaded
-    private void Awake() 
+    // status variables
+    private bool onGround = true;
+    private int keyCount = 0;
+    private int currentScene = 1;
+
+    void Start()
     {
-        kitten = GetComponent<Rigidbody2D>(); // get the rigid body of kitten
-        animate = GetComponent <Animator>(); // get animator of kitten
+        kittenRB = GetComponent<Rigidbody2D>(); // grab rigid body of kitten
+        spriteRenderer = GetComponent<SpriteRenderer>(); // get sprite renderer of kitten
+        animate = GetComponent<Animator>(); // get animator of kitten
     }
 
 
-    // runs every frame
-    private void Update()
+    void FixedUpdate()
     {
-        // walking left/right, keep vertical velocity the same
-        // velocity is a Vector2 with (x velocity, y velocity)
-        kitten.velocity = new Vector2(Input.GetAxis("Horizontal") * speed, kitten.velocity.y);
+        kittenRB.velocity = new Vector2(moveInput.x * moveSpeed, kittenRB.velocity.y); // update kitten's x velocity based on input and speed
 
-        // jumping 
-        if (Input.GetKey(KeyCode.Space)) 
-            kitten.velocity = new Vector2(kitten.velocity.x, speed);
+        animate.SetBool("Walk", moveInput.x != 0); // update walking status
+        animate.SetBool("Jump", !onGround);
 
-        // cause kitten to flip when running in different directions
-        if (Input.GetAxis("Horizontal") > 0.01f)
-            transform.localScale = Vector3.one;
-        else if (Input.GetAxis("Horizontal") < -0.01f)
-            transform.localScale = new Vector3(-1, 1, 1);
+        // flip sprite based on movement
+        if (moveInput.x < 0) spriteRenderer.flipX = true;
+        if (moveInput.x > 0) spriteRenderer.flipX = false;
+    }
 
-        // update walking status
-        animate.SetBool("Walk", Input.GetAxis("Horizontal") != 0);
+    // handles walking
+    public void Move(InputAction.CallbackContext context)
+    {
+        moveInput = context.ReadValue<Vector2>(); // move based on input
+    }
 
-        animate.SetBool("Still", (Input.GetAxis("Horizontal") == 0) && (kitten.velocity.y > 0.01));
+    // handles the jumping function
+    public void Jump(InputAction.CallbackContext context)
+    {
+        if (context.performed && onGround) // performed = just once as the button press is completed
+        {
+            kittenRB.AddForce(new Vector2(kittenRB.velocity.x, jumpForce), ForceMode2D.Impulse); // impulse mode to make the jump a single "burst"
+            onGround = false;
+        }
+    }
 
-        animate.SetBool("Attack", Input.GetKey(KeyCode.E));
+    // method that is called automatically by unity when kitten's 2D collider makes contact with another
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.gameObject.CompareTag("Ground")) // checks for collision with ground
+        {
+            onGround = true;
+        }
+    }
+
+    // handles collisions with door/key
+    public void OnTriggerEnter2D(Collider2D other)
+    {
+       if (other.tag == "Key")
+        {
+            other.gameObject.SetActive(false); // removes key when cat enters the trigger/collision radius
+            keyCount++; // update key count
+
+            // get array of all breakable walls and then inactivate all of them
+            GameObject[] breakableWalls = GameObject.FindGameObjectsWithTag("BreakableWall");
+            for (int i = 0; i < breakableWalls.Length; i++)
+            {
+                breakableWalls[i].SetActive(false);
+            }
+        }
+
+        if (other.tag == "Door")
+        {
+            if (currentScene >= 1) // loop through room two infinitely for now
+            {
+                SceneManager.LoadScene("RoomTwo");
+                currentScene++;
+            }
+            else
+            {
+                SceneManager.LoadScene("RoomOne");
+                currentScene--;
+            }
+        }
     }
 }
