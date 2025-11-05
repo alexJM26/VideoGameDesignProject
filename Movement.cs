@@ -76,24 +76,48 @@ public class Movement : MonoBehaviour
             keyCount++; // update key count
 
             // get array of all breakable walls and then inactivate all of them
-            GameObject[] breakableWalls = GameObject.FindGameObjectsWithTag("BreakableWall");
-            for (int i = 0; i < breakableWalls.Length; i++)
-            {
-                breakableWalls[i].SetActive(false);
-            }
+            // GameObject[] breakableWalls = GameObject.FindGameObjectsWithTag("BreakableWall");
+            // for (int i = 0; i < breakableWalls.Length; i++)
+            // {
+            //    breakableWalls[i].SetActive(false);
+            // }
         }
 
-        if (other.tag == "Door")
+       // infinite loop when walking left
+        if (other.tag == "LoopLeft")
         {
-            if (currentScene >= 1) // loop through room two infinitely for now
+            transform.position = new Vector3(transform.position.x + 2f, transform.position.y, transform.position.z); // move only x position back
+        }
+
+        // allow for progression to next scene after walking right for long enough
+        if (other.tag == "LoopRight")
+        {
+            currentScene++;
+            if (currentScene <= 40)
             {
-                SceneManager.LoadScene("RoomTwo");
-                currentScene++;
+                transform.position = new Vector3(transform.position.x - 2f, transform.position.y, transform.position.z); // move only x position back
             }
             else
             {
-                SceneManager.LoadScene("RoomOne");
-                currentScene--;
+                currentScene = 0;
+            }
+        }
+
+        if (other.tag == "LoopDown")
+        {
+            currentScene++;
+            if (currentScene <= 60 && keyCount < 1)
+            {
+                transform.position = new Vector3(transform.position.x, transform.position.y + 2.5f, transform.position.z); // move only y position up
+            }
+            else
+            {
+                currentScene = 0;
+                transform.position = new Vector3(transform.position.x - 144, 9, transform.position.z); // align position w/ vertical hallway
+                if (keyCount >= 1)
+                {
+                    SceneManager.LoadScene("Room2"); // progress onto room two only if key way found
+                }
             }
         }
     }
