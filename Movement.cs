@@ -66,6 +66,20 @@ public class Movement : MonoBehaviour
             onGround = true;
         }
     }
+    private void OnCollisionStay2D(Collision2D collision) // uses continuous ground checking as well
+    {
+        if (collision.gameObject.CompareTag("Ground"))
+        {
+            onGround = true;
+        }
+    }
+    private void OnCollisionExit2D(Collision2D collision) // ensures ground detection turns off properly
+    {
+        if (collision.gameObject.CompareTag("Ground"))
+        {
+            onGround = false;
+        }
+    }
 
     // handles collisions with door/key
     public void OnTriggerEnter2D(Collider2D other)
@@ -82,6 +96,12 @@ public class Movement : MonoBehaviour
             //    breakableWalls[i].SetActive(false);
             // }
         }
+
+       // trigger to kill player
+       if (other.tag == "Danger")
+       {
+            SceneManager.LoadScene("YouDied");
+       }
 
        // infinite loop when walking left
         if (other.tag == "LoopLeft")
@@ -116,7 +136,7 @@ public class Movement : MonoBehaviour
                 transform.position = new Vector3(transform.position.x - 144, 9, transform.position.z); // align position w/ vertical hallway
                 if (keyCount >= 1)
                 {
-                    SceneManager.LoadScene("Room2"); // progress onto room two only if key way found
+                    SceneManager.LoadScene("YouWin"); // progress onto room two only if key was found
                 }
             }
         }
